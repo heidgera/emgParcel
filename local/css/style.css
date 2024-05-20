@@ -21,11 +21,11 @@ body {
 }
 
 dual-graph {
-	background-color: #333;
+	background-color: #00425d;
 	border: 1px solid black;
 }
 
-.floater {
+/* .floater {
 	position: fixed;
 	background-color: #444;
 	border: 1px solid black;
@@ -48,6 +48,73 @@ dual-graph {
 
 .floater #grTm {
 	float:right;
+} */
+
+.popup {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	opacity: 0;
+	transition: opacity .5s;
+	background-color: rgba(0,66,93,.5);
+}
+
+.popup.show{
+	opacity: 1;
+}
+
+.popBG {
+	position: absolute;
+	background: rgba(0,0,0,0) no-repeat center center;
+	background-size: contain;
+	height: 75vh;
+	width: 75vw;
+	top: 12.5vh;
+	left: 12.5vw;
+}
+
+#Attract .popBG{
+	background-image:  url("../img/attract.png");
+}
+
+#Wait .popBG{
+	height: 50vh;
+	width: 50vw;
+	top: 25vh;
+	left: 25vw;
+	background-image:  url("../img/wait.png");
+}
+
+#Wait .popBG .count {
+	position: absolute;
+	position: absolute;
+	background: rgba(0,0,0,0) no-repeat center center;
+	background-size: contain;
+	height: 35vh;
+	width: 50vw;
+	top: 12vh;
+	opacity: 0;
+	transition: opacity .5s .5s;
+}
+
+#Wait .popBG .count.flip{
+	transition: opacity 0s;
+	opacity: 1;
+}
+
+
+#Wait .popBG .count:nth-child(1){
+	background-image:  url("../img/count3.png");
+}
+
+#Wait .popBG .count:nth-child(2){
+	background-image:  url("../img/count2.png");
+}
+
+#Wait .popBG .count:nth-child(3){
+	background-image:  url("../img/count1.png");
 }
 
 .content {
