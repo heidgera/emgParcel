@@ -2,7 +2,7 @@ obtain(['µ/serialParser.js', 'µ/events.js', 'µ/utilities.js'], ({ serialParse
   const TEMP_REPORT = 1;
   const ENVELOPE = 2;
   const EMG_RAW = 3;
-  const DISABLE = 4;
+  const SIGGOOD = 4;
   const TEMP = 5;
   const IR_COUNT = 6;
   const RED_COUNT = 7;
@@ -90,6 +90,12 @@ obtain(['µ/serialParser.js', 'µ/events.js', 'µ/utilities.js'], ({ serialParse
         var raw =  data[0];
         //console.log(raw);
         _this.emit('envelope', raw);
+      });
+
+      parser.on(SIGGOOD, (data)=> {
+        var raw =  data[0];
+        //console.log(raw);
+        _this.emit('goodSignal', raw);
       });
 
       parser.on(RED_COUNT, (data)=> {

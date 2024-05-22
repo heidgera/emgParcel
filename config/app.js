@@ -1,7 +1,7 @@
 module.exports = {
   showDevTools: true,
   io: {
-    manufacturer: 'wch.cn',
+    manufacturer: 'Microsoft',
   }
   // windows: [
   //   {

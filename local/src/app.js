@@ -30,6 +30,8 @@ obtain(obtains, ({Graph}, { TempControl }, fs, {audio})=> {
     var fps = 50;
     var inUse = false;
     var userTimeout = 0;
+    var goodSignal = 0;
+    var lastGood = 0;
 
 ///////////////////////////////////////////////////
 // Temperature Tracking vs Time
@@ -169,7 +171,7 @@ obtain(obtains, ({Graph}, { TempControl }, fs, {audio})=> {
       var bin = Math.min(4,Math.max(0,Math.floor(cnt/10)));
       // console.log(cnt);
       // console.log(vals[Math.floor(cnt/20)]);
-      if(cnt && inUse){
+      if(cnt && inUse && goodSignal){
         audio.left.unmute();
         audio.right.unmute();
         audio.left.setFrequency(vals[bin]);
@@ -181,7 +183,8 @@ obtain(obtains, ({Graph}, { TempControl }, fs, {audio})=> {
 
       audio.left.setFrequency(vals[bin]);
       audio.right.setFrequency(vals[bin]/2);
-      crnTmp.add({x: Date.now(), y: cnt});
+      if(goodSignal) crnTmp.add({x: Date.now(), y: cnt});
+      else crnTmp.add({x: Date.now(), y: 0});
       //else if(cnt != crnTmp[0].y) crnTmp[0].x = Date.now();
       let recent = crnTmp.filter(val=>val.x>Date.now()-graphTime);
       let min = recent.reduce((acc,val)=>Math.min(acc,val.y),1000000);
@@ -193,7 +196,23 @@ obtain(obtains, ({Graph}, { TempControl }, fs, {audio})=> {
       tempTime.draw();
     });
 
+
+    var showAttract = ()=>{
+      console.log("checking time");
+      if(lastGood + 10000 > Date.now()) userTimeout = setTimeout(showAttract, 10000 - (Date.now()-lastGood));
+      else {
+        inUse = false;
+        Attract.classList.add('show');
+      }
+    }
+
+    tempControl.on('goodSignal', good=>{
+      goodSignal = good;
+      if(good) lastGood = Date.now();
+    });
+
     tempControl.onready = ()=>{
+      console.log("Clear");
       clearInterval(testInt);
     }
 
@@ -207,10 +226,7 @@ obtain(obtains, ({Graph}, { TempControl }, fs, {audio})=> {
         if(which<2) countdown(which+1);
         else {
           Wait.classList.remove('show');
-          userTimeout = setTimeout(()=>{
-            inUse = false;
-            Attract.classList.add('show');
-          }, 30000);
+          userTimeout = setTimeout(showAttract, 10000);
         }
       }, 1000);
     }
