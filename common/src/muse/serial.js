@@ -13,6 +13,7 @@ obtain(['serialport'], ({SerialPort})=> {
     let ser = null;
     _this.isOpen = false;
     _this.onOpen = () => {};
+    _this.onClose = () => {};
 
     _this.onMessage = () => {console.log('test');};
 
@@ -53,6 +54,12 @@ obtain(['serialport'], ({SerialPort})=> {
       ser.on('open', function () {
         _this.isOpen = true;
         _this.onOpen();
+      });
+
+      ser.on('close', function () {
+        _this.isOpen = false;
+        console.log('port closed');
+        _this.onClose();
       });
 
       ser.on('error', function () {

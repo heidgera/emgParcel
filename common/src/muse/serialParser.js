@@ -51,10 +51,14 @@ obtain(['µ/serial.js'], (ser)=> {
     };
 
     _this.onOpen = ()=> {};
+    _this.onClose = ()=> {};
 
     serial.onOpen = () => {
       _this.onOpen();
+    };
 
+    serial.onClose = () => {
+      _this.onClose();
     };
 
     _this.setup = (opts)=> {

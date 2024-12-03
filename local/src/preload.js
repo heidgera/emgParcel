@@ -10,6 +10,10 @@ const { DelimiterParser} = require('@serialport/parser-delimiter');
 global.config = require(path.resolve(`${__dirname}/../../config/app.js`));
 window.config = global.config;
 
+var {app} = require('electron');
+
+window.electronApp = app;
+
 SerialPort.SerialPort.list().then((ports)=>{
   console.log(ports);
 });

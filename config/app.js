@@ -1,5 +1,6 @@
 module.exports = {
   showDevTools: true,
+  monitorConfig: true,
   io: {
     manufacturer: 'Microsoft',
   }

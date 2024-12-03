@@ -4,16 +4,15 @@ var obtains = [
   './src/dualGraph.js',
   './src/controller.js',
   'fs',
-  'µ/audio.js'
+  'µ/audio.js',
+  'child_process'
 ];
 
 var electron = require('electron');
 
-//console.log(electron);
-
 var openDialog = (method, config)=>{return electron.ipcRenderer.invoke('dialog', method, config)};
 
-obtain(obtains, ({Graph}, { TempControl }, fs, {audio})=> {
+obtain(obtains, ({Graph}, { TempControl }, fs, {audio}, execSync)=> {
 
   exports.app = {};
 
@@ -157,7 +156,8 @@ obtain(obtains, ({Graph}, { TempControl }, fs, {audio})=> {
     var testInt = setInterval(()=>{
       var osc = (Date.now()/4000.)*Math.PI;
       tempControl.emit("envelope",Math.max(Math.cos(osc)*30+20+Math.sin(Date.now()/200)*10+Math.cos(Date.now()/100)*5,0));
-    },20);
+      tempControl.emit("goodSignal",1);
+    },10);
 
     var prevMin = 0;
     var prevMax = 0;
@@ -168,7 +168,7 @@ obtain(obtains, ({Graph}, { TempControl }, fs, {audio})=> {
       cnt = cnt;
       tempTime.clear();
       //audio.left.changeFrequency(cnt,20);
-      var bin = Math.min(4,Math.max(0,Math.floor(cnt/10)));
+      var bin = Math.min(4,Math.max(0,Math.floor(cnt/12)));
       // console.log(cnt);
       // console.log(vals[Math.floor(cnt/20)]);
       if(cnt && inUse && goodSignal){
@@ -196,6 +196,15 @@ obtain(obtains, ({Graph}, { TempControl }, fs, {audio})=> {
       tempTime.draw();
     });
 
+    tempControl.onPortNotFound = ()=>{
+      setTimeout(()=>{
+        tempControl.connect();
+      },5000);
+    }
+
+    tempControl.onClose = ()=>{
+      tempControl.connect();
+    }
 
     var showAttract = ()=>{
       console.log("checking time");
@@ -242,6 +251,8 @@ obtain(obtains, ({Graph}, { TempControl }, fs, {audio})=> {
             countdown(0);
           },500);
         },500);
+      } else if(e.key === "Escape"){
+        electronApp.quit();
       }
     };
   };

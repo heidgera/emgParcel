@@ -186,7 +186,14 @@ obtain(['µ/serialParser.js', 'µ/events.js', 'µ/utilities.js'], ({ serialParse
 
       parser.onOpen = ()=> {
         parser.sendPacket([127, READY]);
+      };
 
+      _this.onClose = ()=>{};
+
+      parser.onClose = ()=> {
+        setTimeout(()=>{
+          _this.onClose();
+        },2000);
       };
 
       _this.onPortNotFound = ()=>{};
@@ -198,8 +205,12 @@ obtain(['µ/serialParser.js', 'µ/events.js', 'µ/utilities.js'], ({ serialParse
         _this.onPortNotFound();
       }
 
-      if (conf.name) parser.setup({ name: conf.name, baud: 115200 });
-      else if (conf.manufacturer) parser.setup({ manufacturer: conf.manufacturer, baud: 115200 });
+      _this.connect = ()=>{
+        if (conf.name) parser.setup({ name: conf.name, baud: 115200 });
+        else if (conf.manufacturer) parser.setup({ manufacturer: conf.manufacturer, baud: 115200 });
+      }
+
+      _this.connect();
 
     }
 
