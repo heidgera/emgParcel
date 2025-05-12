@@ -171,18 +171,18 @@ obtain(obtains, ({Graph}, { TempControl }, fs, {audio}, execSync)=> {
       var bin = Math.min(4,Math.max(0,Math.floor(cnt/12)));
       // console.log(cnt);
       // console.log(vals[Math.floor(cnt/20)]);
-      if(inUse){
+      if(cnt && inUse && goodSignal){
         audio.left.unmute();
         audio.right.unmute();
         audio.left.setFrequency(vals[bin]);
-        audio.right.setFrequency(vals[bin]);
+        audio.right.setFrequency(vals[bin]/2);
       } else {
         audio.left.mute();
         audio.right.mute();
       }
 
       audio.left.setFrequency(vals[bin]);
-      audio.right.setFrequency(vals[bin]);
+      audio.right.setFrequency(vals[bin]/2);
       if(goodSignal) crnTmp.add({x: Date.now(), y: cnt});
       else crnTmp.add({x: Date.now(), y: 0});
       //else if(cnt != crnTmp[0].y) crnTmp[0].x = Date.now();
@@ -207,12 +207,12 @@ obtain(obtains, ({Graph}, { TempControl }, fs, {audio}, execSync)=> {
     }
 
     var showAttract = ()=>{
-      //console.log("checking time");
-      //if(lastGood + 10000 > Date.now()) userTimeout = setTimeout(showAttract, 10000 - (Date.now()-lastGood));
-      //else {
+      console.log("checking time");
+      if(lastGood + 10000 > Date.now()) userTimeout = setTimeout(showAttract, 10000 - (Date.now()-lastGood));
+      else {
         inUse = false;
         Attract.classList.add('show');
-      //}
+      }
     }
 
     tempControl.on('goodSignal', good=>{
@@ -235,7 +235,7 @@ obtain(obtains, ({Graph}, { TempControl }, fs, {audio}, execSync)=> {
         if(which<2) countdown(which+1);
         else {
           Wait.classList.remove('show');
-          userTimeout = setTimeout(showAttract, 30000);
+          userTimeout = setTimeout(showAttract, 10000);
         }
       }, 1000);
     }
@@ -252,10 +252,7 @@ obtain(obtains, ({Graph}, { TempControl }, fs, {audio}, execSync)=> {
           },500);
         },500);
       } else if(e.key === "Escape"){
-        //electronApp.quit();
-        require('child_process').execSync('sudo systemctl stop electron');
-      } else if (e.key === "~"){
-        require('child_process').execSync('sudo systemctl restart electron');
+        electronApp.quit();
       }
     };
   };
