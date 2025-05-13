@@ -5,6 +5,7 @@ var obtains = [
   './src/controller.js',
   'fs',
   'µ/audio.js',
+  'µ/utilities.js',
   'child_process'
 ];
 
@@ -12,7 +13,7 @@ var electron = require('electron');
 
 var openDialog = (method, config)=>{return electron.ipcRenderer.invoke('dialog', method, config)};
 
-obtain(obtains, ({Graph}, { TempControl }, fs, {audio}, execSync)=> {
+obtain(obtains, ({Graph}, { TempControl }, fs, {audio}, {averager}, execSync)=> {
 
   exports.app = {};
 
@@ -44,6 +45,7 @@ obtain(obtains, ({Graph}, { TempControl }, fs, {audio}, execSync)=> {
     //create the controller object
     console.log(config);
     var tempControl = new TempControl(config.io);
+    var smooth = new averager(10);
 
     //start the program with the controls disabled
     // µ('input').forEach(item => item.disabled = true);
@@ -165,7 +167,7 @@ obtain(obtains, ({Graph}, { TempControl }, fs, {audio}, execSync)=> {
     var vals = [261,293,329,392,440];
 
     tempControl.on('envelope', cnt=>{
-      cnt = cnt;
+      cnt = smooth.addSample(cnt);
       tempTime.clear();
       //audio.left.changeFrequency(cnt,20);
       var bin = Math.min(4,Math.max(0,Math.floor(cnt/12)));
