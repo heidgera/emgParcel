@@ -92,6 +92,12 @@ obtain(['µ/serialParser.js', 'µ/events.js', 'µ/utilities.js'], ({ serialParse
         _this.emit('envelope', raw);
       });
 
+      parser.on(EMG_RAW, (data)=> {
+        var raw =  data[0]+(data[1]<<7);
+        //console.log(raw);
+        _this.emit('rawEMG', raw);
+      });
+
       parser.on(SIGGOOD, (data)=> {
         var raw =  data[0];
         //console.log(raw);
@@ -206,8 +212,8 @@ obtain(['µ/serialParser.js', 'µ/events.js', 'µ/utilities.js'], ({ serialParse
       }
 
       _this.connect = ()=>{
-        if (conf.name) parser.setup({ name: conf.name, baud: 115200 });
-        else if (conf.manufacturer) parser.setup({ manufacturer: conf.manufacturer, baud: 115200 });
+        if (conf.name) parser.setup({ name: conf.name, baud: 250000 });
+        else if (conf.manufacturer) parser.setup({ manufacturer: conf.manufacturer, baud: 250000 });
       }
 
       _this.connect();
