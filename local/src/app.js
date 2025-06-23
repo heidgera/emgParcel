@@ -6,7 +6,7 @@ var obtains = [
   'fs',
   'µ/audio.js',
   'µ/utilities.js',
-  'child_process'
+  'path'
 ];
 
 var electron = require('electron');
@@ -14,7 +14,7 @@ const { get } = require('https');
 
 var openDialog = (method, config)=>{return electron.ipcRenderer.invoke('dialog', method, config)};
 
-obtain(obtains, ({Graph}, { TempControl }, fs, {audio}, {averager}, execSync)=> {
+obtain(obtains, ({Graph}, { TempControl }, fs, {audio}, {averager}, path)=> {
 
   exports.app = {};
 
@@ -23,6 +23,18 @@ obtain(obtains, ({Graph}, { TempControl }, fs, {audio}, {averager}, execSync)=> 
   var config = window.config;
 
   exports.app.start = ()=> {
+    if(config.hasOwnProperty("sigma")){
+      noiseVal.textContent = config.sigma;
+      noise.value = config.sigma;
+    }
+
+    if(config.hasOwnProperty("damp")){
+      dampSlide.value = config.damp;
+    } 
+
+    if(config.hasOwnProperty("scale")){
+      scaleSlide.value = config.scale;
+    } 
 
     console.log('started');
 
@@ -74,10 +86,10 @@ obtain(obtains, ({Graph}, { TempControl }, fs, {audio}, {averager}, execSync)=> 
 
     //initial settings for the temperature graph
     var graphTime = 10000;
-    var reportFreq = 100;
+    var reportFreq = 20;
 
     //
-    crnTmp.limits.size = 60 * reportFreq;
+    crnTmp.limits.size = 10 * reportFreq;
 
     //set graphing ranges for the temperature traces
     crnTmp.setRanges({y: {
@@ -100,19 +112,22 @@ obtain(obtains, ({Graph}, { TempControl }, fs, {audio}, {averager}, execSync)=> 
     var main = tempTime.main;
 
     tempTime.customFGDraw = ()=>{
-      var ctx = tempTime.ctx;
-      ctx.fillStyle = "#ff0000";
-      for(var i=0; i<ps.length; i++){
-        ctx.beginPath();
-        ctx.rect(i*2, tempTime.main.height, 2, -1000*ps[i]);
-        ctx.fill();
+      if(noiseAdjust.classList.contains('show')){
+        var ctx = tempTime.ctx;
+        ctx.fillStyle = "#ff0000";
+        for(var i=0; i<ps.length; i++){
+          ctx.beginPath();
+          ctx.rect(i*2, tempTime.main.height, 2, -1000*ps[i]);
+          ctx.fill();
+        }
+        ctx.fillStyle = "#00ff00";
+        for(var i=0; i<filtered.length; i++){
+          ctx.beginPath();
+          ctx.rect(i*2, 0, 2, 1000*filtered[i]);
+          ctx.fill();
+        }
       }
-      ctx.fillStyle = "#00ff00";
-      for(var i=0; i<filtered.length; i++){
-        ctx.beginPath();
-        ctx.rect(i*2, tempTime.main.height/2, 2, -1000*filtered[i]);
-        ctx.fill();
-      }
+      
     }
 
     var subDivs = 10;
@@ -254,22 +269,42 @@ obtain(obtains, ({Graph}, { TempControl }, fs, {audio}, {averager}, execSync)=> 
       return tot;
     }
 
-    function getPowerInWindow(ps, frequency, windowSize){
-      const frequencyResolution = sampleRate / ps.length;
-      const index = Math.round(frequency / frequencyResolution);
-
-      var tot = 0;
-      for(var i=0; i<ps.length; i++){
-        if(Math.abs(index-i)<windowSize) tot+=ps[i];
-      }
-    
-      return tot;
-    }
-
-
     var count =0;
     var ps = getSpectralPower(emgSample);
     var filtered = ps.slice();
+
+    function movingAverage(data, windowSize){
+      const movingAverages = []; // This will store our final smoothed data.
+  
+      // The loop iterates through the data array, but stops early
+      // enough so that the last window is a full window.
+      for (let i = 0; i <= data.length - windowSize; i++) {
+        // Get the current window of data points.
+        // .slice() extracts a portion of the array into a new array.
+        const window = data.slice(i, i + windowSize);
+
+        // Calculate the sum of the numbers in the current window.
+        // .reduce() is a clean way to sum up all elements in an array.
+        const sum = window.reduce((total, current) => total + current, 0);
+
+        // Calculate the average for the window and add it to our results.
+        const average = sum / windowSize;
+        movingAverages.push(average);
+      }
+      return movingAverages;
+    }
+
+    function reduceSpikes(data, reduction){
+      let lb = 7;
+      for(let i=lb; i<data.length; i++){
+        let acc = 0; 
+        for(let j=0; j<lb; j++){
+          acc+=data[i-j];
+        }
+        if((acc - data[i])/acc>reduction) data[i] = (acc*lb*2 + data[i])/(lb*2+1);
+      }
+      return data;
+    }
 
     function getStandardDeviation (array) {
       const n = array.length
@@ -279,28 +314,32 @@ obtain(obtains, ({Graph}, { TempControl }, fs, {audio}, {averager}, execSync)=> 
 
     setInterval(()=>{
       spikes.length = 0;
-      ps = getSpectralPower(emgSample).slice(20);
-      var totVal = ps.reduce((acc,cur)=>acc+cur);
+      ps = getSpectralPower(emgSample).slice(10);
+      ps = reduceSpikes(ps,2);
+      var totVal = ps.reduce((acc,cur)=>acc+cur,0);
       var ave = totVal/ps.length;
 
       var sigma = getStandardDeviation(ps);
-      var prev = 0;
       for(let i=0; i<ps.length; i++){
-        if(ps[i]-ave>sigma*3 && i){ //12 works well
+        if(ps[i]-ave>sigma*noise.value){ //3 standard deviations gets rid of the most egregious spikes, after dropping the beginning of the spectrum
           spikes.push(i);
         } 
       }
 
+      var nospikes = ps.filter(val=>val-ave<sigma*noise.value);
+      var newAve = nospikes.reduce((acc,cur)=>acc+cur,0)/nospikes.length;
+
       filtered = ps.slice();
 
       var garbage = 0;
-      var doRange = 5;//dieoff range
-      var doFunc = which=>Math.pow(Math.abs(doRange - which)/doRange,1/2);
+      var doRange = 3;//dieoff range
+      var doFunc = (which,val)=>val - (val - newAve)*Math.pow(Math.abs(doRange - which)/doRange,dampSlide.value);
+      //var doFunc = (which,val)=>ave;
       for(let i=0; i<spikes.length; i++){
-        filtered[spikes[i]] = 0;
+        filtered[spikes[i]] = newAve;
         for(let j=1; j<doRange; j++){
-          if(spikes[i]-j>=0) filtered[spikes[i]-j] -= filtered[spikes[i]-j]*doFunc(j);
-          if(spikes[i]+j<ps.length-1) filtered[spikes[i]+j] -= filtered[spikes[i]+j]*doFunc(j);
+          if(spikes[i]-j>=0) filtered[spikes[i]-j] = doFunc(j,filtered[spikes[i]-j]);
+          if(spikes[i]+j<ps.length-1) filtered[spikes[i]+j] = doFunc(j,filtered[spikes[i]+j]);
         }
         garbage += getPowerAtFrequency(ps,spikes[i]*(sampleRate/ps.length),3);
       }
@@ -316,9 +355,12 @@ obtain(obtains, ({Graph}, { TempControl }, fs, {audio}, {averager}, execSync)=> 
       //               goodCheck: ${gdChk}
       //               dev/ave:${filtered * fSigma / sig}
       //               prefilt sig/sig:${sigma/fSigma}`);
-
-      tempControl.emit('envelope', 50*filtered.reduce((acc,cur)=>acc+cur));
-      tempControl.emit('goodSignal', sigma/fSigma < 3);
+      var mult = scaleSlide.value;
+      var thresh = .15;
+      console.log(fSigma/sigma)
+      if(fSigma/sigma < thresh) mult = Math.pow((fSigma/sigma)/thresh,4)*mult;
+      tempControl.emit('envelope', mult*filtered.reduce((acc,cur)=>acc+cur));
+      tempControl.emit('goodSignal', fSigma/sigma > thresh);
       count = 0;
     },50);
 
@@ -359,6 +401,8 @@ obtain(obtains, ({Graph}, { TempControl }, fs, {audio}, {averager}, execSync)=> 
       clearInterval(testInt);
     }
 
+    var countdownTO = 0;
+
     var countdown = (which)=>{
       µ(".count",Wait)[which].classList.add('flip');
       setTimeout(()=>{
@@ -373,6 +417,27 @@ obtain(obtains, ({Graph}, { TempControl }, fs, {audio}, {averager}, execSync)=> 
         }
       }, 1000);
     }
+
+    noise.addEventListener("input", (e)=>{
+      noiseVal.textContent = noise.value;
+    });
+
+    nSave.onclick = e=>{
+      window.config.sigma = noise.value;
+      window.config.damp = dampSlide.value;
+      window.config.scale = scaleSlide.value;
+      fs.writeFileSync(path.resolve(__dirname + '../../../config/app.js'),"module.exports="+JSON.stringify(window.config));
+      showAttract();
+      noiseAdjust.classList.remove('show');
+    };
+
+    nCancel.onclick = e=>{
+      //window.config.sigma = noise.value;
+      //fs.writeFileSync(path.resolve(__dirname + '../../config/app.js'),JSON.stringify(window.config));
+      showAttract();
+      noiseAdjust.classList.remove('show');
+    };
+
 
     document.onkeydown = (e)=> {
       if(e.key == ' ' && !inUse){
@@ -390,6 +455,11 @@ obtain(obtains, ({Graph}, { TempControl }, fs, {audio}, {averager}, execSync)=> 
         require('child_process').execSync('sudo systemctl stop electron');
       } else if (e.key === "~"){
         require('child_process').execSync('sudo systemctl restart electron');
+      } else if (e.key === "n"){
+        µ(".popup").forEach(n=>n.classList.remove('show'));
+        clearTimeout(userTimeout);
+        clearTimeout(countdownTO);
+        noiseAdjust.classList.add('show');
       }
     };
   };

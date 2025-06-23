@@ -79,6 +79,29 @@ dual-graph {
 	background-image:  url("../img/attract.png");
 }
 
+#noiseAdjust .popBG {
+	width: 50vw;
+	top: 10vh;
+	height:auto;
+	left: 25vw;
+	background-color: #fff;
+	border-radius: 1em;
+	padding: 1em;
+	border:#00425d solid 2px;
+	text-align: center;
+	font-family: sans-serif;
+	color: #00425d;
+	font-size: 1.5em;
+
+	div, input {
+		display: inline-block;
+	}
+
+	#noise {
+		width: 100%;
+	}
+}
+
 #Wait .popBG{
 	height: 50vh;
 	width: 50vw;

@@ -22,6 +22,23 @@
           <div class="count"></div>
         </div>
       </div>
+      <div class='popup' id='noiseAdjust'>
+        <div class="popBG">
+          <h1>Noise Level Adjustment.</h1>
+          <p>Adjust slider until green spikes disappear. Left is more sensitive, Right is less.</p>
+          <h2 id="noiseVal">1</h2>
+          <input type="range" min="0" max="4" step=".1" value="1" id="noise">
+          <h2>Damping</h2>
+          <input type="range" min="0" max="4" step=".1" value=".5" id="dampSlide">
+          <h2>Scale</h2>
+          <input type="range" min="0" max="200" step="1" value="100" id="scaleSlide">
+          <br>
+          <div>
+            <input type="button" id="nSave" value="Save">
+            <input type="button" id="nCancel" value="Cancel">
+          </div>
+        </div>
+      </div>
     </div>
   </body>
 </html>
